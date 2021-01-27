@@ -11809,6 +11809,7 @@ div#notebook {
 <span class="kn">from</span> <span class="nn">plotly.subplots</span> <span class="k">import</span> <span class="n">make_subplots</span>
 <span class="kn">import</span> <span class="nn">plotly.io</span> <span class="k">as</span> <span class="nn">pio</span>
 <span class="kn">import</span> <span class="nn">scipy.stats</span> <span class="k">as</span> <span class="nn">stats</span>
+<span class="kn">import</span> <span class="nn">statsmodels.stats.multicomp</span> <span class="k">as</span> <span class="nn">mult</span>
 
 <span class="n">pio</span><span class="o">.</span><span class="n">renderers</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
 <span class="n">pio</span><span class="o">.</span><span class="n">renderers</span><span class="o">.</span><span class="n">default</span> <span class="o">=</span> <span class="s1">&#39;notebook&#39;</span> 
@@ -11818,6 +11819,15 @@ div#notebook {
 </div>
 </div>
 
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p><h3> <u>Demographic Analysis</u> <h3></p>
+
+</div>
+</div>
 </div>
 <div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
 </div>
@@ -11833,7 +11843,13 @@ div#notebook {
 <div class="prompt input_prompt">In&nbsp;[9]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">data_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="s2">&quot;../data/anes_specialstudy_2012_directdem_dta/anes_specialstudy_2012_directdem_stata12.dta&quot;</span><span class="p">)</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="p">{</span>
+    <span class="s2">&quot;tags&quot;</span><span class="p">:</span> <span class="p">[</span>
+        <span class="s2">&quot;hide_input&quot;</span><span class="p">,</span>
+    <span class="p">]</span>
+<span class="p">}</span>
+
+<span class="n">data_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="s2">&quot;../data/anes_specialstudy_2012_directdem_dta/anes_specialstudy_2012_directdem_stata12.dta&quot;</span><span class="p">)</span>
 <span class="n">data</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_stata</span><span class="p">(</span><span class="n">data_path</span><span class="p">)</span>
 
 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Data dimensions: &quot;</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
@@ -12311,6 +12327,725 @@ if (outputEl) {{
 </div>
 </div>
 
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p><p> So as we can see, most of the participants have either completed high school, some college but no degree, or a bachelors degree. The proportions of each party within these levels of education appear to stay nearly constant, although there appear the be more independents and democrats in the highest levels of education. In summary, we can move forward knowing that there isn't an immediately obvious difference in education levels between the parties, and that this cohort appears to well-represent the greater US population.<p></p>
+<p><p> Now, let's go ahead and examine the knowledgeability of the participants; we'll do this by evaluating their scores on the objective question of the survey, questions that are unopinionated and have one correct answer.  <p></p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p><h3> <u>Knowledgeability Analysis<u> <h3></p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p><p> First, we need to collect all of the objective questions and find their respective correct answers. Luckily, I've done this by manually searching through the questions, and I've compiled the information in a csv file we can use. <p></p>
+<p><p>It appears that there are <u>three</u> non-opiniated questions on the survey. These are only the questions I could observe, so there may be more in addition to these. They are:<p></p>
+<ol>
+<li>What is Medicare?</li>
+<li>On which of the following does the U.S. federal government currently spend the least?</li>
+<li>For how many years is a United States Senator elected – that is, how many years are there in one full term of office for a U.S. Senator?</li>
+</ol>
+<p><p> Now we can load the column names and correct answers for each of these questions. <p></p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[27]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">question_info_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="s2">&quot;../output/objective_questions_list.xlsx&quot;</span><span class="p">)</span>
+<span class="n">question_info</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_excel</span><span class="p">(</span><span class="n">question_info_path</span><span class="p">)</span>
+<span class="n">question_info</span><span class="o">.</span><span class="n">head</span><span class="p">()</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area">
+
+<div class="prompt output_prompt">Out[27]:</div>
+
+
+
+<div class="output_html rendered_html output_subarea output_execute_result">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>Question</th>
+      <th>correct_answer</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>pre_medicare</td>
+      <td>1</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>pre_leastsp</td>
+      <td>1</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>pre_senterm</td>
+      <td>6</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[28]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># Now we can examine the format of the answers in our survey data</span>
+<span class="n">num_questions</span> <span class="o">=</span> <span class="n">question_info</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">num_questions</span><span class="p">):</span>
+    <span class="n">curr_question</span> <span class="o">=</span> <span class="n">question_info</span><span class="p">[</span><span class="s2">&quot;Question&quot;</span><span class="p">][</span><span class="n">i</span><span class="p">]</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">curr_question</span><span class="p">][</span><span class="mi">0</span><span class="p">:</span><span class="mi">5</span><span class="p">])</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;------------------------------&quot;</span><span class="p">)</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area">
+
+<div class="prompt"></div>
+
+
+<div class="output_subarea output_stream output_stdout output_text">
+<pre>0    1. A program run by the U.S. federal governmen...
+1    1. A program run by the U.S. federal governmen...
+2    1. A program run by the U.S. federal governmen...
+3    1. A program run by the U.S. federal governmen...
+4    1. A program run by the U.S. federal governmen...
+Name: pre_medicare, dtype: category
+Categories (6, object): [-9. Refused &lt; -4. Error &lt; 1. A program run by the U.S. federal governmen... &lt; 2. A program run by state governments to provi... &lt; 3. A private health insurance plan sold to ind... &lt; 4. A private, non-profit organization that run...]
+------------------------------
+0           2. Medicare
+1    4. Social Security
+2        1. Foreign aid
+3           2. Medicare
+4    4. Social Security
+Name: pre_leastsp, dtype: category
+Categories (6, object): [-9. Refused &lt; -4. Error &lt; 1. Foreign aid &lt; 2. Medicare &lt; 3. National defense &lt; 4. Social Security]
+------------------------------
+0    2
+1    6
+2    4
+3    2
+4    4
+Name: pre_senterm, dtype: category
+Categories (24, object): [-9. Refused &lt; -4. Error &lt; 1 &lt; 2 ... 50 &lt; 79 &lt; 90 &lt; 99]
+------------------------------
+</pre>
+</div>
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p><p>We can see that for each question, we have the possibility that the participant refused to answer, or that their answer was recorded as an error. We'll have to filter these out just like in the demographic analysis.<p></p>
+<p>Also, for the two multiple choice questions, the text of the answer is included after the number id. We'll have to account for this when filtering the answers.</p>
+<p>Lastly, all of the datatypes are categorical, so we'll have to mind the datatypes when doing our transformations.</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>With a few transformations and selections, we now have a table with all the information we need: the correctness of each participants answer, along with their total and average score. Now, let's start examining how they did! How was the overall accuracy by question?</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[29]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># Select only the columns of interest: id, party affiliation, and the questions of interest.</span>
+<span class="n">wanted_columns</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;caseid&quot;</span><span class="p">,</span> <span class="s2">&quot;pre_rptyid&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="nb">list</span><span class="p">(</span><span class="n">question_info</span><span class="p">[</span><span class="s2">&quot;Question&quot;</span><span class="p">])</span>
+<span class="n">trivia_data</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">wanted_columns</span><span class="p">]</span>
+
+<span class="c1"># Now let&#39;s filter out all of the errorneous and refusal answers</span>
+<span class="n">pre</span> <span class="o">=</span> <span class="n">trivia_data</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+<span class="k">for</span> <span class="n">column</span> <span class="ow">in</span> <span class="n">wanted_columns</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">column</span> <span class="o">!=</span> <span class="s2">&quot;caseid&quot;</span><span class="p">:</span>
+        <span class="n">trivia_data</span> <span class="o">=</span> <span class="n">trivia_data</span><span class="p">[(</span><span class="n">trivia_data</span><span class="p">[</span><span class="n">column</span><span class="p">]</span> <span class="o">!=</span> <span class="n">trivia_data</span><span class="p">[</span><span class="n">column</span><span class="p">]</span><span class="o">.</span><span class="n">cat</span><span class="o">.</span><span class="n">categories</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">trivia_data</span><span class="p">[</span><span class="n">column</span><span class="p">]</span> <span class="o">!=</span> <span class="n">trivia_data</span><span class="p">[</span><span class="n">column</span><span class="p">]</span><span class="o">.</span><span class="n">cat</span><span class="o">.</span><span class="n">categories</span><span class="p">[</span><span class="mi">1</span><span class="p">])]</span>
+<span class="n">post</span> <span class="o">=</span> <span class="n">trivia_data</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+<span class="n">rows_removed</span> <span class="o">=</span> <span class="n">pre</span> <span class="o">-</span> <span class="n">post</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[30]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># Now we can add new columns on the correctness of each participants answer</span>
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">num_questions</span><span class="p">):</span>
+    <span class="n">question</span> <span class="o">=</span> <span class="n">question_info</span><span class="o">.</span><span class="n">Question</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+    <span class="n">correct_answer</span> <span class="o">=</span> <span class="n">question_info</span><span class="o">.</span><span class="n">correct_answer</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+    <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">trivia_data</span><span class="p">[</span><span class="n">question</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span> <span class="o">==</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="n">trivia_data</span><span class="p">[</span><span class="n">question</span> <span class="o">+</span> <span class="s2">&quot;_correct&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">trivia_data</span><span class="p">[</span><span class="n">question</span><span class="p">]</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">contains</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">correct_answer</span><span class="p">))</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">trivia_data</span><span class="p">[</span><span class="n">question</span> <span class="o">+</span> <span class="s2">&quot;_correct&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">trivia_data</span><span class="p">[</span><span class="n">question</span><span class="p">]</span> <span class="o">==</span> <span class="n">correct_answer</span>
+
+<span class="c1"># Let&#39;s add one more column as an average score of the three questions for each participant</span>
+<span class="n">score_columns</span> <span class="o">=</span> <span class="p">[</span><span class="n">question</span> <span class="o">+</span> <span class="s2">&quot;_correct&quot;</span> <span class="k">for</span> <span class="n">question</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="n">question_info</span><span class="p">[</span><span class="s2">&quot;Question&quot;</span><span class="p">])]</span>
+<span class="n">trivia_data</span><span class="p">[</span><span class="s2">&quot;avg_score&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">trivia_data</span><span class="p">[</span><span class="n">score_columns</span><span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">trivia_data</span><span class="p">[</span><span class="s2">&quot;total_score&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">trivia_data</span><span class="p">[</span><span class="n">score_columns</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+<span class="n">trivia_data</span><span class="o">.</span><span class="n">head</span><span class="p">()</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area">
+
+<div class="prompt output_prompt">Out[30]:</div>
+
+
+
+<div class="output_html rendered_html output_subarea output_execute_result">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>caseid</th>
+      <th>pre_rptyid</th>
+      <th>pre_medicare</th>
+      <th>pre_leastsp</th>
+      <th>pre_senterm</th>
+      <th>pre_medicare_correct</th>
+      <th>pre_leastsp_correct</th>
+      <th>pre_senterm_correct</th>
+      <th>avg_score</th>
+      <th>total_score</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>3001</td>
+      <td>1. Democrat</td>
+      <td>1. A program run by the U.S. federal governmen...</td>
+      <td>2. Medicare</td>
+      <td>2</td>
+      <td>True</td>
+      <td>False</td>
+      <td>False</td>
+      <td>0.333333</td>
+      <td>1</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>3004</td>
+      <td>2. Republican</td>
+      <td>1. A program run by the U.S. federal governmen...</td>
+      <td>4. Social Security</td>
+      <td>6</td>
+      <td>True</td>
+      <td>False</td>
+      <td>True</td>
+      <td>0.666667</td>
+      <td>2</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>3005</td>
+      <td>1. Democrat</td>
+      <td>1. A program run by the U.S. federal governmen...</td>
+      <td>1. Foreign aid</td>
+      <td>4</td>
+      <td>True</td>
+      <td>True</td>
+      <td>False</td>
+      <td>0.666667</td>
+      <td>2</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>3009</td>
+      <td>1. Democrat</td>
+      <td>1. A program run by the U.S. federal governmen...</td>
+      <td>2. Medicare</td>
+      <td>2</td>
+      <td>True</td>
+      <td>False</td>
+      <td>False</td>
+      <td>0.333333</td>
+      <td>1</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>3016</td>
+      <td>2. Republican</td>
+      <td>1. A program run by the U.S. federal governmen...</td>
+      <td>4. Social Security</td>
+      <td>4</td>
+      <td>True</td>
+      <td>False</td>
+      <td>False</td>
+      <td>0.333333</td>
+      <td>1</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p><strong>How was the overall accuracy by question?</strong></p>
+<p><p> The greatest accuracy was held by the "What is Medicare" question, while the lowest accuracy was held by the "What does the federal government spend the least on?" question. This is expected, since medicare and the term of a senator are things that stay constant and are encountered in school or advertised to the public. Meanwhile, the federal budget changes year-by-year and is not well-advertised to the public.  <p></p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[34]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">averages</span> <span class="o">=</span> <span class="n">trivia_data</span><span class="p">[</span><span class="n">score_columns</span><span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+<span class="n">question_names</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;Medicare&quot;</span><span class="p">,</span> <span class="s2">&quot;Least Spending&quot;</span><span class="p">,</span> <span class="s2">&quot;Senator&#39;s Term&quot;</span><span class="p">]</span>
+
+<span class="n">fig</span> <span class="o">=</span> <span class="n">go</span><span class="o">.</span><span class="n">Figure</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="p">[</span><span class="n">go</span><span class="o">.</span><span class="n">Table</span><span class="p">(</span>
+    <span class="n">header</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">values</span><span class="o">=</span><span class="n">question_names</span><span class="p">,</span>
+                <span class="n">fill_color</span><span class="o">=</span><span class="s1">&#39;paleturquoise&#39;</span><span class="p">,</span>
+                <span class="n">align</span><span class="o">=</span><span class="s1">&#39;left&#39;</span><span class="p">),</span>
+    <span class="n">cells</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">values</span><span class="o">=</span><span class="p">[</span><span class="n">averages</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">averages</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">averages</span><span class="p">[</span><span class="mi">2</span><span class="p">]],</span>
+               <span class="n">fill_color</span><span class="o">=</span><span class="s1">&#39;lavender&#39;</span><span class="p">,</span>
+               <span class="n">align</span><span class="o">=</span><span class="s1">&#39;left&#39;</span><span class="p">))</span>
+<span class="p">])</span>
+<span class="n">fig</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area">
+
+<div class="prompt"></div>
+
+
+
+<div class="output_html rendered_html output_subarea ">
+<div>
+        
+        
+            <div id="f8273b4c-f7be-4c8a-acfc-825b12be8aff" class="plotly-graph-div" style="height:525px; width:100%;"></div>
+            <script type="text/javascript">
+                require(["plotly"], function(Plotly) {
+                    window.PLOTLYENV=window.PLOTLYENV || {};
+                    
+                if (document.getElementById("f8273b4c-f7be-4c8a-acfc-825b12be8aff")) {
+                    Plotly.newPlot(
+                        'f8273b4c-f7be-4c8a-acfc-825b12be8aff',
+                        [{"cells": {"align": "left", "fill": {"color": "lavender"}, "values": [0.8717851739788199, 0.3661119515885023, 0.537821482602118]}, "header": {"align": "left", "fill": {"color": "paleturquoise"}, "values": ["Medicare", "Least Spending", "Senator's Term"]}, "type": "table"}],
+                        {"template": {"data": {"bar": [{"error_x": {"color": "#2a3f5f"}, "error_y": {"color": "#2a3f5f"}, "marker": {"line": {"color": "#E5ECF6", "width": 0.5}}, "type": "bar"}], "barpolar": [{"marker": {"line": {"color": "#E5ECF6", "width": 0.5}}, "type": "barpolar"}], "carpet": [{"aaxis": {"endlinecolor": "#2a3f5f", "gridcolor": "white", "linecolor": "white", "minorgridcolor": "white", "startlinecolor": "#2a3f5f"}, "baxis": {"endlinecolor": "#2a3f5f", "gridcolor": "white", "linecolor": "white", "minorgridcolor": "white", "startlinecolor": "#2a3f5f"}, "type": "carpet"}], "choropleth": [{"colorbar": {"outlinewidth": 0, "ticks": ""}, "type": "choropleth"}], "contour": [{"colorbar": {"outlinewidth": 0, "ticks": ""}, "colorscale": [[0.0, "#0d0887"], [0.1111111111111111, "#46039f"], [0.2222222222222222, "#7201a8"], [0.3333333333333333, "#9c179e"], [0.4444444444444444, "#bd3786"], [0.5555555555555556, "#d8576b"], [0.6666666666666666, "#ed7953"], [0.7777777777777778, "#fb9f3a"], [0.8888888888888888, "#fdca26"], [1.0, "#f0f921"]], "type": "contour"}], "contourcarpet": [{"colorbar": {"outlinewidth": 0, "ticks": ""}, "type": "contourcarpet"}], "heatmap": [{"colorbar": {"outlinewidth": 0, "ticks": ""}, "colorscale": [[0.0, "#0d0887"], [0.1111111111111111, "#46039f"], [0.2222222222222222, "#7201a8"], [0.3333333333333333, "#9c179e"], [0.4444444444444444, "#bd3786"], [0.5555555555555556, "#d8576b"], [0.6666666666666666, "#ed7953"], [0.7777777777777778, "#fb9f3a"], [0.8888888888888888, "#fdca26"], [1.0, "#f0f921"]], "type": "heatmap"}], "heatmapgl": [{"colorbar": {"outlinewidth": 0, "ticks": ""}, "colorscale": [[0.0, "#0d0887"], [0.1111111111111111, "#46039f"], [0.2222222222222222, "#7201a8"], [0.3333333333333333, "#9c179e"], [0.4444444444444444, "#bd3786"], [0.5555555555555556, "#d8576b"], [0.6666666666666666, "#ed7953"], [0.7777777777777778, "#fb9f3a"], [0.8888888888888888, "#fdca26"], [1.0, "#f0f921"]], "type": "heatmapgl"}], "histogram": [{"marker": {"colorbar": {"outlinewidth": 0, "ticks": ""}}, "type": "histogram"}], "histogram2d": [{"colorbar": {"outlinewidth": 0, "ticks": ""}, "colorscale": [[0.0, "#0d0887"], [0.1111111111111111, "#46039f"], [0.2222222222222222, "#7201a8"], [0.3333333333333333, "#9c179e"], [0.4444444444444444, "#bd3786"], [0.5555555555555556, "#d8576b"], [0.6666666666666666, "#ed7953"], [0.7777777777777778, "#fb9f3a"], [0.8888888888888888, "#fdca26"], [1.0, "#f0f921"]], "type": "histogram2d"}], "histogram2dcontour": [{"colorbar": {"outlinewidth": 0, "ticks": ""}, "colorscale": [[0.0, "#0d0887"], [0.1111111111111111, "#46039f"], [0.2222222222222222, "#7201a8"], [0.3333333333333333, "#9c179e"], [0.4444444444444444, "#bd3786"], [0.5555555555555556, "#d8576b"], [0.6666666666666666, "#ed7953"], [0.7777777777777778, "#fb9f3a"], [0.8888888888888888, "#fdca26"], [1.0, "#f0f921"]], "type": "histogram2dcontour"}], "mesh3d": [{"colorbar": {"outlinewidth": 0, "ticks": ""}, "type": "mesh3d"}], "parcoords": [{"line": {"colorbar": {"outlinewidth": 0, "ticks": ""}}, "type": "parcoords"}], "pie": [{"automargin": true, "type": "pie"}], "scatter": [{"marker": {"colorbar": {"outlinewidth": 0, "ticks": ""}}, "type": "scatter"}], "scatter3d": [{"line": {"colorbar": {"outlinewidth": 0, "ticks": ""}}, "marker": {"colorbar": {"outlinewidth": 0, "ticks": ""}}, "type": "scatter3d"}], "scattercarpet": [{"marker": {"colorbar": {"outlinewidth": 0, "ticks": ""}}, "type": "scattercarpet"}], "scattergeo": [{"marker": {"colorbar": {"outlinewidth": 0, "ticks": ""}}, "type": "scattergeo"}], "scattergl": [{"marker": {"colorbar": {"outlinewidth": 0, "ticks": ""}}, "type": "scattergl"}], "scattermapbox": [{"marker": {"colorbar": {"outlinewidth": 0, "ticks": ""}}, "type": "scattermapbox"}], "scatterpolar": [{"marker": {"colorbar": {"outlinewidth": 0, "ticks": ""}}, "type": "scatterpolar"}], "scatterpolargl": [{"marker": {"colorbar": {"outlinewidth": 0, "ticks": ""}}, "type": "scatterpolargl"}], "scatterternary": [{"marker": {"colorbar": {"outlinewidth": 0, "ticks": ""}}, "type": "scatterternary"}], "surface": [{"colorbar": {"outlinewidth": 0, "ticks": ""}, "colorscale": [[0.0, "#0d0887"], [0.1111111111111111, "#46039f"], [0.2222222222222222, "#7201a8"], [0.3333333333333333, "#9c179e"], [0.4444444444444444, "#bd3786"], [0.5555555555555556, "#d8576b"], [0.6666666666666666, "#ed7953"], [0.7777777777777778, "#fb9f3a"], [0.8888888888888888, "#fdca26"], [1.0, "#f0f921"]], "type": "surface"}], "table": [{"cells": {"fill": {"color": "#EBF0F8"}, "line": {"color": "white"}}, "header": {"fill": {"color": "#C8D4E3"}, "line": {"color": "white"}}, "type": "table"}]}, "layout": {"annotationdefaults": {"arrowcolor": "#2a3f5f", "arrowhead": 0, "arrowwidth": 1}, "coloraxis": {"colorbar": {"outlinewidth": 0, "ticks": ""}}, "colorscale": {"diverging": [[0, "#8e0152"], [0.1, "#c51b7d"], [0.2, "#de77ae"], [0.3, "#f1b6da"], [0.4, "#fde0ef"], [0.5, "#f7f7f7"], [0.6, "#e6f5d0"], [0.7, "#b8e186"], [0.8, "#7fbc41"], [0.9, "#4d9221"], [1, "#276419"]], "sequential": [[0.0, "#0d0887"], [0.1111111111111111, "#46039f"], [0.2222222222222222, "#7201a8"], [0.3333333333333333, "#9c179e"], [0.4444444444444444, "#bd3786"], [0.5555555555555556, "#d8576b"], [0.6666666666666666, "#ed7953"], [0.7777777777777778, "#fb9f3a"], [0.8888888888888888, "#fdca26"], [1.0, "#f0f921"]], "sequentialminus": [[0.0, "#0d0887"], [0.1111111111111111, "#46039f"], [0.2222222222222222, "#7201a8"], [0.3333333333333333, "#9c179e"], [0.4444444444444444, "#bd3786"], [0.5555555555555556, "#d8576b"], [0.6666666666666666, "#ed7953"], [0.7777777777777778, "#fb9f3a"], [0.8888888888888888, "#fdca26"], [1.0, "#f0f921"]]}, "colorway": ["#636efa", "#EF553B", "#00cc96", "#ab63fa", "#FFA15A", "#19d3f3", "#FF6692", "#B6E880", "#FF97FF", "#FECB52"], "font": {"color": "#2a3f5f"}, "geo": {"bgcolor": "white", "lakecolor": "white", "landcolor": "#E5ECF6", "showlakes": true, "showland": true, "subunitcolor": "white"}, "hoverlabel": {"align": "left"}, "hovermode": "closest", "mapbox": {"style": "light"}, "paper_bgcolor": "white", "plot_bgcolor": "#E5ECF6", "polar": {"angularaxis": {"gridcolor": "white", "linecolor": "white", "ticks": ""}, "bgcolor": "#E5ECF6", "radialaxis": {"gridcolor": "white", "linecolor": "white", "ticks": ""}}, "scene": {"xaxis": {"backgroundcolor": "#E5ECF6", "gridcolor": "white", "gridwidth": 2, "linecolor": "white", "showbackground": true, "ticks": "", "zerolinecolor": "white"}, "yaxis": {"backgroundcolor": "#E5ECF6", "gridcolor": "white", "gridwidth": 2, "linecolor": "white", "showbackground": true, "ticks": "", "zerolinecolor": "white"}, "zaxis": {"backgroundcolor": "#E5ECF6", "gridcolor": "white", "gridwidth": 2, "linecolor": "white", "showbackground": true, "ticks": "", "zerolinecolor": "white"}}, "shapedefaults": {"line": {"color": "#2a3f5f"}}, "ternary": {"aaxis": {"gridcolor": "white", "linecolor": "white", "ticks": ""}, "baxis": {"gridcolor": "white", "linecolor": "white", "ticks": ""}, "bgcolor": "#E5ECF6", "caxis": {"gridcolor": "white", "linecolor": "white", "ticks": ""}}, "title": {"x": 0.05}, "xaxis": {"automargin": true, "gridcolor": "white", "linecolor": "white", "ticks": "", "title": {"standoff": 15}, "zerolinecolor": "white", "zerolinewidth": 2}, "yaxis": {"automargin": true, "gridcolor": "white", "linecolor": "white", "ticks": "", "title": {"standoff": 15}, "zerolinecolor": "white", "zerolinewidth": 2}}}},
+                        {"responsive": true}
+                    ).then(function(){
+                            
+var gd = document.getElementById('f8273b4c-f7be-4c8a-acfc-825b12be8aff');
+var x = new MutationObserver(function (mutations, observer) {{
+        var display = window.getComputedStyle(gd).display;
+        if (!display || display === 'none') {{
+            console.log([gd, 'removed!']);
+            Plotly.purge(gd);
+            observer.disconnect();
+        }}
+}});
+
+// Listen for the removal of the full notebook cells
+var notebookContainer = gd.closest('#notebook-container');
+if (notebookContainer) {{
+    x.observe(notebookContainer, {childList: true});
+}}
+
+// Listen for the clearing of the current output cell
+var outputEl = gd.closest('.output');
+if (outputEl) {{
+    x.observe(outputEl, {childList: true});
+}}
+
+                        })
+                };
+                });
+            </script>
+        </div>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p><strong> How did accuracy on the questions differ by party?</strong></p>
+<p>The graph below displays the distribution of average objectivity scores for each party. While there isn't an enormous difference, we can observe that the distributions appear to differ between parties: the "Other Party" group appears to have more low scores, while the Independents appear to have more high scores, with the Democrats and Republicans somewhere in between.</p>
+<p>Does this mean that the independent party is the smartest and most qualified to vote? Let's see if we can find a statistically significant difference between the group means.</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[38]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">party_breakdown</span> <span class="o">=</span> <span class="n">trivia_data</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="n">by</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;pre_rptyid&quot;</span><span class="p">])</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+<span class="n">party_breakdown</span> <span class="o">=</span> <span class="n">party_breakdown</span><span class="p">[(</span><span class="n">party_breakdown</span><span class="o">.</span><span class="n">index</span> <span class="o">!=</span> <span class="s1">&#39;-9. Refused&#39;</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">party_breakdown</span><span class="o">.</span><span class="n">index</span> <span class="o">!=</span> <span class="s1">&#39;-4. Error&#39;</span><span class="p">)]</span>
+<span class="n">party_breakdown</span><span class="p">[</span><span class="s2">&quot;n&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">trivia_data</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="n">by</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;pre_rptyid&quot;</span><span class="p">])</span><span class="o">.</span><span class="n">count</span><span class="p">()[</span><span class="s2">&quot;caseid&quot;</span><span class="p">]</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">party_breakdown</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">()</span>
+
+<span class="n">fig</span> <span class="o">=</span> <span class="n">make_subplots</span><span class="p">(</span><span class="n">rows</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">cols</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">subplot_titles</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;Democrat&quot;</span><span class="p">,</span> <span class="s2">&quot;Republican&quot;</span><span class="p">,</span> <span class="s2">&quot;Independent&quot;</span><span class="p">,</span> <span class="s2">&quot;Other Party&quot;</span><span class="p">),</span> <span class="n">shared_xaxes</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+<span class="n">democrat</span> <span class="o">=</span> <span class="n">go</span><span class="o">.</span><span class="n">Histogram</span><span class="p">(</span><span class="n">x</span> <span class="o">=</span> <span class="n">trivia_data</span><span class="p">[</span><span class="n">trivia_data</span><span class="p">[</span><span class="s2">&quot;pre_rptyid&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">contains</span><span class="p">(</span><span class="s2">&quot;Democrat&quot;</span><span class="p">)]</span><span class="o">.</span><span class="n">avg_score</span><span class="p">)</span>
+<span class="n">republican</span> <span class="o">=</span> <span class="n">go</span><span class="o">.</span><span class="n">Histogram</span><span class="p">(</span><span class="n">x</span> <span class="o">=</span> <span class="n">trivia_data</span><span class="p">[</span><span class="n">trivia_data</span><span class="p">[</span><span class="s2">&quot;pre_rptyid&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">contains</span><span class="p">(</span><span class="s2">&quot;Republican&quot;</span><span class="p">)</span> <span class="p">]</span><span class="o">.</span><span class="n">avg_score</span><span class="p">)</span>
+<span class="n">independent</span> <span class="o">=</span> <span class="n">go</span><span class="o">.</span><span class="n">Histogram</span><span class="p">(</span><span class="n">x</span> <span class="o">=</span> <span class="n">trivia_data</span><span class="p">[</span><span class="n">trivia_data</span><span class="p">[</span><span class="s2">&quot;pre_rptyid&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">contains</span><span class="p">(</span><span class="s2">&quot;Independent&quot;</span><span class="p">)</span> <span class="p">]</span><span class="o">.</span><span class="n">avg_score</span><span class="p">)</span>
+<span class="n">other</span> <span class="o">=</span> <span class="n">go</span><span class="o">.</span><span class="n">Histogram</span><span class="p">(</span><span class="n">x</span> <span class="o">=</span> <span class="n">trivia_data</span><span class="p">[</span><span class="n">trivia_data</span><span class="p">[</span><span class="s2">&quot;pre_rptyid&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">contains</span><span class="p">(</span><span class="s2">&quot;Other&quot;</span><span class="p">)</span> <span class="p">]</span><span class="o">.</span><span class="n">avg_score</span><span class="p">)</span>
+
+<span class="n">fig</span><span class="o">.</span><span class="n">append_trace</span><span class="p">(</span><span class="n">democrat</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+<span class="n">fig</span><span class="o">.</span><span class="n">append_trace</span><span class="p">(</span><span class="n">republican</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+<span class="n">fig</span><span class="o">.</span><span class="n">append_trace</span><span class="p">(</span><span class="n">independent</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+<span class="n">fig</span><span class="o">.</span><span class="n">append_trace</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+
+<span class="n">fig</span><span class="o">.</span><span class="n">update_layout</span><span class="p">(</span><span class="n">showlegend</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="n">fig</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area">
+
+<div class="prompt"></div>
+
+
+<div class="output_subarea output_stream output_stdout output_text">
+<pre>                pre_medicare_correct  pre_leastsp_correct  \
+pre_rptyid                                                  
+1. Democrat                 0.864806             0.349754   
+2. Republican               0.896010             0.349902   
+3. Independent              0.865111             0.401821   
+5. Other party              0.800000             0.320000   
+
+                pre_senterm_correct  avg_score  total_score     n  
+pre_rptyid                                                         
+1. Democrat                0.503010   0.572523     1.717570  1827  
+2. Republican              0.536952   0.594288     1.782865  1529  
+3. Independent             0.575413   0.614115     1.842345  1757  
+5. Other party             0.531429   0.550476     1.651429   175  
+
+</pre>
+</div>
+</div>
+
+<div class="output_area">
+
+<div class="prompt"></div>
+
+
+
+<div class="output_html rendered_html output_subarea ">
+<div>
+        
+        
+            <div id="9c79b214-ffc5-4126-ba32-069872a836b0" class="plotly-graph-div" style="height:525px; width:100%;"></div>
+            <script type="text/javascript">
+                require(["plotly"], function(Plotly) {
+                    window.PLOTLYENV=window.PLOTLYENV || {};
+                    
+                if (document.getElementById("9c79b214-ffc5-4126-ba32-069872a836b0")) {
+                    Plotly.newPlot(
+                        '9c79b214-ffc5-4126-ba32-069872a836b0',
+                        [{"type": "histogram", "x": [0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 1.0, 0.6666666666666666, 1.0, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 1.0, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 1.0, 0.6666666666666666, 0.3333333333333333, 1.0, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 1.0, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 1.0, 1.0, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.0, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 1.0, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.0, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.0, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 1.0, 1.0, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 1.0, 1.0, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.0, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 1.0, 1.0, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 1.0, 0.6666666666666666, 1.0, 0.6666666666666666, 0.6666666666666666, 1.0, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 1.0, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 1.0, 0.6666666666666666, 0.6666666666666666, 1.0, 1.0, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.0, 1.0, 0.3333333333333333, 1.0, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.0, 0.6666666666666666, 0.3333333333333333, 1.0, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 1.0, 1.0, 1.0, 0.3333333333333333, 0.0, 0.6666666666666666, 1.0, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.0, 0.3333333333333333, 0.6666666666666666, 1.0, 0.6666666666666666, 0.6666666666666666, 1.0, 1.0, 1.0, 0.6666666666666666, 1.0, 0.0, 1.0, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 1.0, 0.0, 0.0, 1.0, 0.6666666666666666, 1.0, 1.0, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 1.0, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 1.0, 1.0, 0.3333333333333333, 0.6666666666666666, 1.0, 0.6666666666666666, 0.6666666666666666, 1.0, 0.0, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.0, 0.3333333333333333, 1.0, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 1.0, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.0, 0.6666666666666666, 1.0, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.0, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.0, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.0, 0.0, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 1.0, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 1.0, 1.0, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 1.0, 1.0, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.0, 0.6666666666666666, 0.6666666666666666, 1.0, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.0, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 1.0, 0.3333333333333333, 0.0, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 1.0, 0.0, 1.0, 1.0, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 1.0, 1.0, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.0, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 1.0, 0.6666666666666666, 0.3333333333333333, 0.0, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.0, 0.6666666666666666, 0.6666666666666666, 0.0, 0.6666666666666666, 0.6666666666666666, 1.0, 0.6666666666666666, 0.3333333333333333, 0.0, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.0, 0.0, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 1.0, 1.0, 0.6666666666666666, 1.0, 1.0, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 1.0, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.0, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 1.0, 1.0, 0.3333333333333333, 0.0, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 1.0, 1.0, 0.3333333333333333, 1.0, 0.6666666666666666, 0.3333333333333333, 0.0, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 1.0, 0.6666666666666666, 0.3333333333333333, 1.0, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.0, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.0, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 1.0, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.0, 0.3333333333333333, 0.6666666666666666, 0.0, 0.6666666666666666, 0.6666666666666666, 0.0, 0.6666666666666666, 0.6666666666666666, 0.0, 0.6666666666666666, 0.3333333333333333, 1.0, 0.3333333333333333, 0.6666666666666666, 0.0, 1.0, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 1.0, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.0, 1.0, 0.6666666666666666, 0.3333333333333333, 0.0, 0.0, 1.0, 0.3333333333333333, 1.0, 0.0, 1.0, 1.0, 1.0, 0.6666666666666666, 1.0, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.0, 0.3333333333333333, 0.0, 1.0, 1.0, 0.3333333333333333, 0.6666666666666666, 0.0, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 1.0, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 1.0, 1.0, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 1.0, 1.0, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 1.0, 1.0, 0.3333333333333333, 1.0, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 1.0, 0.3333333333333333, 0.0, 1.0, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 1.0, 1.0, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 1.0, 0.3333333333333333, 1.0, 0.3333333333333333, 1.0, 0.6666666666666666, 1.0, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 1.0, 0.3333333333333333, 1.0, 0.3333333333333333, 0.6666666666666666, 1.0, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 1.0, 0.3333333333333333, 1.0, 1.0, 0.3333333333333333, 1.0, 0.6666666666666666, 1.0, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 1.0, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 1.0, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 1.0, 1.0, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 1.0, 0.0, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 1.0, 0.6666666666666666, 0.6666666666666666, 1.0, 0.3333333333333333, 0.0, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.6666666666666666, 0.6666666666666666, 1.0, 0.6666666666666666, 0.6666666666666666, 1.0, 0.6666666666666666, 1.0, 0.6666666666666666, 0.3333333333333333, 1.0, 0.6666666666666666, 1.0, 1.0, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 1.0, 0.3333333333333333, 0.6666666666666666, 1.0, 0.3333333333333333, 1.0, 1.0, 0.3333333333333333, 1.0, 0.3333333333333333, 1.0, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 1.0, 0.6666666666666666, 1.0, 0.3333333333333333, 1.0, 0.6666666666666666, 1.0, 0.3333333333333333, 0.3333333333333333, 1.0, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 1.0, 1.0, 0.6666666666666666, 1.0, 0.6666666666666666, 1.0, 1.0, 0.3333333333333333, 0.3333333333333333, 0.0, 1.0, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.0, 0.3333333333333333, 0.3333333333333333, 1.0, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 1.0, 0.6666666666666666, 0.3333333333333333, 0.0, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 1.0, 1.0, 0.3333333333333333, 0.3333333333333333, 1.0, 0.6666666666666666, 0.3333333333333333, 1.0, 0.3333333333333333, 1.0, 0.6666666666666666, 1.0, 0.6666666666666666, 1.0, 0.3333333333333333, 1.0, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.0, 0.0, 0.6666666666666666, 1.0, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 1.0, 1.0, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.0, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 1.0, 0.0, 1.0, 1.0, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 1.0, 0.6666666666666666, 1.0, 1.0, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 1.0, 1.0, 1.0, 1.0, 0.3333333333333333, 1.0, 0.3333333333333333, 0.6666666666666666, 1.0, 1.0, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 1.0, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 1.0, 0.3333333333333333, 1.0, 1.0, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 1.0, 1.0, 0.6666666666666666, 1.0, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 1.0, 0.6666666666666666, 0.6666666666666666, 1.0, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 1.0, 0.3333333333333333, 1.0, 0.6666666666666666, 0.6666666666666666, 1.0, 0.6666666666666666, 1.0, 0.6666666666666666, 0.6666666666666666, 1.0, 0.6666666666666666, 0.6666666666666666, 1.0, 1.0, 1.0, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 1.0, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 1.0, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 1.0, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 1.0, 0.3333333333333333, 1.0, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.0, 0.3333333333333333, 0.0, 1.0, 1.0, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 1.0, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 1.0, 0.0, 0.3333333333333333, 0.0, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.0, 0.6666666666666666, 0.6666666666666666, 1.0, 0.6666666666666666, 0.0, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 1.0, 0.3333333333333333, 1.0, 0.6666666666666666, 0.6666666666666666, 1.0, 1.0, 0.6666666666666666, 1.0, 0.6666666666666666, 0.6666666666666666, 1.0, 0.0, 0.0, 1.0, 0.3333333333333333, 1.0, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 1.0, 0.6666666666666666, 1.0, 0.0, 0.3333333333333333, 0.6666666666666666, 1.0, 0.3333333333333333, 1.0, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 1.0, 1.0, 0.6666666666666666, 1.0, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 1.0, 1.0, 1.0, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 1.0, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 1.0, 0.3333333333333333, 1.0, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.0, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.0, 1.0, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 1.0, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 1.0, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.0, 0.6666666666666666, 0.3333333333333333, 1.0, 1.0, 1.0, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 1.0, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 1.0, 1.0, 1.0, 1.0, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 1.0, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 1.0, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 1.0, 0.3333333333333333, 0.3333333333333333, 1.0, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 1.0, 0.0, 0.6666666666666666, 0.3333333333333333, 0.0, 0.3333333333333333, 1.0, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 1.0, 1.0, 0.0, 0.3333333333333333, 0.6666666666666666, 0.0, 0.6666666666666666, 1.0, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.0, 0.3333333333333333, 1.0, 0.3333333333333333, 0.3333333333333333, 1.0, 1.0, 1.0, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 1.0, 1.0, 1.0, 0.0, 1.0, 0.6666666666666666, 1.0, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.0, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.0, 0.3333333333333333, 0.3333333333333333, 0.0, 0.0, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 1.0, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 1.0, 1.0, 0.3333333333333333, 0.6666666666666666, 1.0, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.0, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 1.0, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 1.0, 0.6666666666666666, 0.3333333333333333, 1.0, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 1.0, 0.6666666666666666, 1.0, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 1.0, 0.0, 0.0, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.0, 0.0, 0.6666666666666666, 1.0, 0.3333333333333333, 0.3333333333333333, 1.0, 0.3333333333333333, 0.3333333333333333, 0.0, 0.6666666666666666, 1.0, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 1.0, 0.3333333333333333, 0.3333333333333333, 1.0, 0.6666666666666666, 1.0, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 1.0, 1.0, 1.0, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 1.0, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 1.0, 0.3333333333333333, 0.3333333333333333, 1.0, 0.0, 0.3333333333333333, 1.0, 0.0, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 1.0, 1.0, 0.6666666666666666, 1.0, 0.6666666666666666, 1.0, 1.0, 0.3333333333333333, 0.3333333333333333, 1.0, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.0, 0.6666666666666666, 0.0, 0.0, 0.0, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 1.0, 0.3333333333333333, 0.6666666666666666, 0.0, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 1.0, 0.0, 1.0, 0.0, 1.0, 0.6666666666666666, 0.0, 0.3333333333333333, 0.3333333333333333, 0.0, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 1.0, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.0, 1.0, 0.6666666666666666, 0.3333333333333333, 1.0, 0.6666666666666666, 0.0, 0.6666666666666666, 0.3333333333333333, 1.0, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.0, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 1.0, 1.0, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 1.0, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 1.0, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.0, 0.3333333333333333, 1.0, 1.0, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 1.0, 1.0, 0.3333333333333333, 0.6666666666666666, 0.0, 0.6666666666666666, 0.3333333333333333, 1.0, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 1.0, 0.6666666666666666, 1.0, 1.0, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 1.0, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.0, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 1.0, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 1.0, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.0, 1.0, 0.0, 0.3333333333333333, 0.3333333333333333, 1.0, 1.0, 1.0, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 1.0, 0.6666666666666666, 0.0, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 1.0, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.0, 1.0, 0.6666666666666666, 0.6666666666666666, 1.0, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 1.0, 0.6666666666666666, 0.0, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 1.0, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 1.0, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.0, 0.0, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 1.0, 0.6666666666666666, 0.6666666666666666, 1.0, 0.0, 1.0, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 1.0, 1.0, 0.3333333333333333, 1.0, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 1.0, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 1.0, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 1.0, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.0, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 1.0, 1.0, 0.3333333333333333, 1.0, 0.3333333333333333, 0.0, 0.0, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 1.0, 0.0, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 1.0, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 1.0, 0.3333333333333333, 1.0, 0.0, 1.0, 0.6666666666666666, 0.3333333333333333, 0.0, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 1.0, 1.0, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 1.0, 0.3333333333333333, 0.3333333333333333, 1.0, 0.6666666666666666, 1.0, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.0, 0.6666666666666666, 0.0, 0.6666666666666666, 0.0, 1.0, 1.0, 1.0, 0.0, 0.6666666666666666, 0.6666666666666666, 1.0, 0.3333333333333333, 0.6666666666666666, 1.0, 0.6666666666666666, 0.3333333333333333, 1.0, 0.6666666666666666, 0.0, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 1.0, 0.3333333333333333, 0.0, 0.0, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.0, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 1.0, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.0, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.0, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.0, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.0, 0.6666666666666666, 1.0, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.0, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 1.0, 0.3333333333333333, 1.0, 1.0, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 1.0, 0.6666666666666666, 0.6666666666666666, 1.0, 0.6666666666666666, 0.0, 0.6666666666666666, 0.6666666666666666, 1.0, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 1.0, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 1.0, 0.3333333333333333, 1.0, 1.0, 1.0, 0.3333333333333333, 0.3333333333333333, 1.0, 1.0, 1.0, 1.0, 0.3333333333333333, 0.3333333333333333, 1.0, 0.6666666666666666, 1.0, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 1.0, 0.3333333333333333, 1.0, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 1.0, 0.3333333333333333, 0.6666666666666666, 1.0, 1.0, 0.3333333333333333, 1.0, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 1.0, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 1.0, 1.0, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 1.0, 0.3333333333333333, 0.6666666666666666, 1.0, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 1.0, 1.0, 0.3333333333333333, 1.0, 0.0, 0.6666666666666666, 0.3333333333333333, 1.0, 1.0, 0.0, 0.0, 1.0, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 1.0, 0.0, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 1.0, 0.0, 0.6666666666666666, 1.0, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 1.0, 0.3333333333333333, 0.6666666666666666, 1.0, 0.3333333333333333, 1.0, 0.6666666666666666, 1.0, 0.6666666666666666, 0.6666666666666666, 1.0, 0.3333333333333333, 0.6666666666666666, 1.0, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666], "xaxis": "x", "yaxis": "y"}, {"type": "histogram", "x": [0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.0, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 1.0, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 1.0, 0.3333333333333333, 1.0, 1.0, 0.6666666666666666, 1.0, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 1.0, 1.0, 1.0, 0.3333333333333333, 0.0, 0.3333333333333333, 1.0, 0.3333333333333333, 1.0, 0.3333333333333333, 0.6666666666666666, 1.0, 1.0, 0.0, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 1.0, 1.0, 0.6666666666666666, 1.0, 0.3333333333333333, 0.3333333333333333, 1.0, 0.6666666666666666, 1.0, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 1.0, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.0, 0.6666666666666666, 1.0, 1.0, 0.3333333333333333, 0.6666666666666666, 1.0, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.0, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 1.0, 0.6666666666666666, 1.0, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 1.0, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 1.0, 1.0, 0.6666666666666666, 0.3333333333333333, 1.0, 0.6666666666666666, 1.0, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 1.0, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 1.0, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 1.0, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 1.0, 0.6666666666666666, 0.6666666666666666, 1.0, 1.0, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.0, 0.6666666666666666, 0.6666666666666666, 1.0, 0.3333333333333333, 1.0, 0.3333333333333333, 1.0, 0.6666666666666666, 0.6666666666666666, 1.0, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 1.0, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 1.0, 1.0, 0.6666666666666666, 0.6666666666666666, 1.0, 0.3333333333333333, 0.0, 1.0, 0.3333333333333333, 0.6666666666666666, 1.0, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 1.0, 1.0, 0.6666666666666666, 0.6666666666666666, 1.0, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 1.0, 1.0, 0.3333333333333333, 1.0, 1.0, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 1.0, 0.3333333333333333, 0.6666666666666666, 1.0, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 1.0, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.0, 1.0, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.0, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 1.0, 1.0, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 1.0, 0.6666666666666666, 1.0, 0.6666666666666666, 0.6666666666666666, 1.0, 1.0, 0.6666666666666666, 0.3333333333333333, 1.0, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 1.0, 0.6666666666666666, 0.6666666666666666, 1.0, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 1.0, 0.6666666666666666, 0.6666666666666666, 1.0, 1.0, 0.3333333333333333, 1.0, 0.6666666666666666, 0.3333333333333333, 1.0, 0.6666666666666666, 0.0, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.0, 0.0, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 1.0, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 1.0, 1.0, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 1.0, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 1.0, 0.0, 1.0, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 1.0, 0.6666666666666666, 0.6666666666666666, 1.0, 0.3333333333333333, 0.3333333333333333, 1.0, 0.0, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 1.0, 0.3333333333333333, 0.6666666666666666, 1.0, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 1.0, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 1.0, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 1.0, 0.6666666666666666, 0.3333333333333333, 0.0, 0.6666666666666666, 1.0, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 1.0, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 1.0, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 1.0, 0.3333333333333333, 1.0, 0.6666666666666666, 0.3333333333333333, 1.0, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 1.0, 0.6666666666666666, 0.0, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 1.0, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 1.0, 0.6666666666666666, 1.0, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 1.0, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 1.0, 0.6666666666666666, 0.0, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 1.0, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.0, 0.0, 1.0, 1.0, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 1.0, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 1.0, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 1.0, 1.0, 1.0, 1.0, 0.3333333333333333, 1.0, 0.6666666666666666, 1.0, 1.0, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 1.0, 0.6666666666666666, 1.0, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 1.0, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.0, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.0, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 1.0, 0.6666666666666666, 1.0, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 1.0, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 1.0, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.0, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 1.0, 0.6666666666666666, 0.3333333333333333, 0.0, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 1.0, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 1.0, 0.6666666666666666, 0.3333333333333333, 1.0, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 1.0, 0.6666666666666666, 1.0, 0.3333333333333333, 1.0, 0.0, 0.3333333333333333, 0.3333333333333333, 1.0, 0.3333333333333333, 1.0, 0.6666666666666666, 0.6666666666666666, 1.0, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 1.0, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 1.0, 0.3333333333333333, 0.0, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 1.0, 0.6666666666666666, 0.0, 0.6666666666666666, 1.0, 1.0, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 1.0, 0.6666666666666666, 0.6666666666666666, 1.0, 0.6666666666666666, 1.0, 1.0, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 1.0, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 1.0, 0.6666666666666666, 0.6666666666666666, 1.0, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 1.0, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 1.0, 0.3333333333333333, 0.0, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 1.0, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 1.0, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 1.0, 0.6666666666666666, 1.0, 0.6666666666666666, 0.6666666666666666, 1.0, 0.6666666666666666, 0.3333333333333333, 1.0, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 1.0, 1.0, 1.0, 1.0, 0.6666666666666666, 1.0, 0.3333333333333333, 1.0, 0.6666666666666666, 1.0, 0.3333333333333333, 0.6666666666666666, 1.0, 1.0, 1.0, 1.0, 0.3333333333333333, 1.0, 0.3333333333333333, 0.6666666666666666, 1.0, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 1.0, 1.0, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 1.0, 0.6666666666666666, 0.3333333333333333, 1.0, 1.0, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 1.0, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 1.0, 0.6666666666666666, 0.0, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 1.0, 1.0, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 1.0, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 1.0, 1.0, 0.3333333333333333, 0.0, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.0, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 1.0, 0.6666666666666666, 1.0, 1.0, 0.6666666666666666, 1.0, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 1.0, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 1.0, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 1.0, 0.6666666666666666, 0.3333333333333333, 1.0, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 1.0, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 1.0, 1.0, 1.0, 0.3333333333333333, 1.0, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 1.0, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.0, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 1.0, 1.0, 0.0, 0.3333333333333333, 0.6666666666666666, 1.0, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 1.0, 0.3333333333333333, 1.0, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.0, 1.0, 0.6666666666666666, 0.3333333333333333, 1.0, 1.0, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 1.0, 0.3333333333333333, 0.3333333333333333, 1.0, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 1.0, 0.6666666666666666, 0.6666666666666666, 1.0, 0.3333333333333333, 1.0, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 1.0, 1.0, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 1.0, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 1.0, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 1.0, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.0, 1.0, 0.6666666666666666, 0.6666666666666666, 0.0, 1.0, 0.3333333333333333, 1.0, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 1.0, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 1.0, 0.6666666666666666, 1.0, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 1.0, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 1.0, 0.3333333333333333, 1.0, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 1.0, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 1.0, 0.6666666666666666, 0.6666666666666666, 1.0, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 1.0, 1.0, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 1.0, 0.3333333333333333, 1.0, 1.0, 0.6666666666666666, 0.3333333333333333, 1.0, 0.3333333333333333, 0.0, 0.3333333333333333, 0.3333333333333333, 1.0, 0.0, 0.6666666666666666, 1.0, 0.6666666666666666, 0.3333333333333333, 0.0, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.0, 0.6666666666666666, 0.0, 1.0, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.0, 1.0, 0.6666666666666666, 0.3333333333333333, 0.0, 0.6666666666666666, 0.3333333333333333, 0.0, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 1.0, 1.0, 0.3333333333333333, 1.0, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 1.0, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 1.0, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 1.0, 0.3333333333333333, 1.0, 1.0, 0.6666666666666666, 0.0, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 1.0, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 1.0, 0.0, 1.0, 0.0, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 1.0, 1.0, 0.3333333333333333, 0.0, 0.3333333333333333, 1.0, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 1.0, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 1.0, 0.3333333333333333, 1.0, 0.6666666666666666, 1.0, 0.3333333333333333, 0.6666666666666666, 0.0, 1.0, 0.6666666666666666, 1.0, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 1.0, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 1.0, 1.0, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.0, 0.3333333333333333, 0.3333333333333333, 1.0, 0.3333333333333333, 1.0, 0.6666666666666666, 0.3333333333333333, 1.0, 0.6666666666666666, 1.0, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 1.0, 0.3333333333333333, 1.0, 0.3333333333333333, 0.6666666666666666, 1.0, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.0, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 1.0, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.0, 0.0, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 1.0, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.0, 0.6666666666666666, 1.0, 1.0, 0.6666666666666666, 0.6666666666666666, 1.0, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 1.0, 1.0, 1.0, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 1.0, 1.0, 0.6666666666666666, 0.6666666666666666, 0.0, 0.0, 1.0, 0.3333333333333333, 0.3333333333333333, 1.0, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 1.0, 0.0, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.0, 0.6666666666666666, 0.3333333333333333, 1.0, 1.0, 0.3333333333333333, 0.3333333333333333, 0.0, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.0, 0.0, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 1.0, 0.3333333333333333, 1.0, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 1.0, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.0, 0.6666666666666666, 0.0, 0.0, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 1.0, 1.0, 0.0, 0.6666666666666666, 0.6666666666666666, 1.0, 1.0, 0.6666666666666666, 0.3333333333333333, 0.0, 0.0, 1.0, 1.0, 0.6666666666666666, 1.0, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 1.0, 0.6666666666666666, 0.6666666666666666, 1.0, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 1.0, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 1.0, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 1.0, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 1.0, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 1.0, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 1.0, 0.6666666666666666, 0.0, 0.3333333333333333, 1.0, 0.6666666666666666, 0.0, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 1.0, 1.0, 1.0, 0.6666666666666666, 0.3333333333333333, 1.0, 0.3333333333333333, 0.6666666666666666, 1.0, 0.6666666666666666, 0.3333333333333333, 1.0, 0.3333333333333333, 1.0, 1.0, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.0, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 1.0, 1.0, 1.0, 0.3333333333333333, 0.0, 1.0, 0.0, 1.0, 1.0, 0.0, 1.0, 1.0, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 1.0, 0.3333333333333333, 1.0, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.0, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 1.0, 1.0, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 1.0, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 1.0, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 1.0, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 1.0, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.0, 0.6666666666666666, 1.0, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.0, 0.6666666666666666, 1.0, 1.0, 1.0, 0.6666666666666666, 0.6666666666666666, 1.0, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 1.0, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 1.0, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 1.0, 1.0, 0.6666666666666666, 0.6666666666666666, 1.0, 0.3333333333333333, 0.3333333333333333, 1.0, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 1.0, 1.0, 0.3333333333333333, 0.6666666666666666, 1.0, 1.0, 0.3333333333333333, 0.6666666666666666, 1.0, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 1.0, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.0, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 1.0], "xaxis": "x2", "yaxis": "y2"}, {"type": "histogram", "x": [0.6666666666666666, 1.0, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 1.0, 0.3333333333333333, 0.0, 1.0, 0.0, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 1.0, 1.0, 1.0, 0.3333333333333333, 0.0, 0.3333333333333333, 1.0, 1.0, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 1.0, 0.6666666666666666, 1.0, 0.6666666666666666, 1.0, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 1.0, 0.0, 0.0, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 1.0, 0.3333333333333333, 1.0, 1.0, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 1.0, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 1.0, 1.0, 0.3333333333333333, 1.0, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 1.0, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 1.0, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 1.0, 0.0, 0.3333333333333333, 1.0, 0.6666666666666666, 0.3333333333333333, 1.0, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 1.0, 0.3333333333333333, 1.0, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 1.0, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 1.0, 0.3333333333333333, 0.6666666666666666, 1.0, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.0, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 1.0, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 1.0, 0.3333333333333333, 0.6666666666666666, 1.0, 0.3333333333333333, 0.6666666666666666, 1.0, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.0, 1.0, 0.6666666666666666, 1.0, 1.0, 1.0, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 1.0, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 1.0, 0.0, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.0, 1.0, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 1.0, 0.6666666666666666, 1.0, 1.0, 0.6666666666666666, 1.0, 0.6666666666666666, 1.0, 1.0, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 1.0, 0.6666666666666666, 0.3333333333333333, 1.0, 1.0, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 1.0, 0.3333333333333333, 0.6666666666666666, 1.0, 1.0, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 1.0, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 1.0, 0.6666666666666666, 1.0, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 1.0, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 1.0, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 1.0, 0.0, 1.0, 0.0, 0.6666666666666666, 0.6666666666666666, 1.0, 0.6666666666666666, 0.6666666666666666, 1.0, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 1.0, 0.3333333333333333, 0.0, 0.3333333333333333, 1.0, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 1.0, 0.3333333333333333, 0.3333333333333333, 1.0, 1.0, 1.0, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 1.0, 0.6666666666666666, 1.0, 0.3333333333333333, 1.0, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 1.0, 0.0, 0.6666666666666666, 0.3333333333333333, 1.0, 0.3333333333333333, 0.0, 1.0, 0.6666666666666666, 0.6666666666666666, 0.0, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.0, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 1.0, 0.6666666666666666, 0.3333333333333333, 1.0, 1.0, 1.0, 0.0, 1.0, 0.6666666666666666, 0.0, 0.3333333333333333, 0.3333333333333333, 0.0, 0.6666666666666666, 0.3333333333333333, 0.0, 0.3333333333333333, 0.6666666666666666, 1.0, 0.3333333333333333, 0.6666666666666666, 1.0, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.0, 1.0, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 1.0, 0.6666666666666666, 1.0, 1.0, 0.6666666666666666, 1.0, 1.0, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 1.0, 0.0, 0.3333333333333333, 0.0, 0.0, 0.0, 0.6666666666666666, 0.0, 0.6666666666666666, 0.3333333333333333, 1.0, 1.0, 0.0, 1.0, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.0, 0.3333333333333333, 0.6666666666666666, 1.0, 0.6666666666666666, 0.3333333333333333, 0.0, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.0, 0.0, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 1.0, 0.6666666666666666, 0.6666666666666666, 1.0, 1.0, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.0, 1.0, 0.6666666666666666, 0.0, 0.0, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.0, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 1.0, 0.6666666666666666, 1.0, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.0, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 1.0, 1.0, 1.0, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 1.0, 0.6666666666666666, 1.0, 0.6666666666666666, 0.6666666666666666, 1.0, 1.0, 0.6666666666666666, 1.0, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 1.0, 0.3333333333333333, 0.3333333333333333, 1.0, 1.0, 0.6666666666666666, 1.0, 0.6666666666666666, 0.6666666666666666, 0.0, 0.3333333333333333, 0.6666666666666666, 1.0, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 1.0, 1.0, 0.3333333333333333, 1.0, 0.6666666666666666, 1.0, 0.6666666666666666, 0.6666666666666666, 1.0, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.0, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 1.0, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 1.0, 0.6666666666666666, 0.6666666666666666, 1.0, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.0, 1.0, 1.0, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.0, 1.0, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.0, 1.0, 1.0, 0.6666666666666666, 0.6666666666666666, 1.0, 0.6666666666666666, 1.0, 0.0, 0.3333333333333333, 1.0, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 1.0, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 1.0, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 1.0, 0.3333333333333333, 1.0, 0.6666666666666666, 0.3333333333333333, 1.0, 0.6666666666666666, 1.0, 0.6666666666666666, 0.6666666666666666, 1.0, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.0, 1.0, 0.6666666666666666, 1.0, 1.0, 0.3333333333333333, 1.0, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 1.0, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 1.0, 1.0, 1.0, 0.6666666666666666, 1.0, 0.3333333333333333, 1.0, 0.6666666666666666, 0.0, 0.6666666666666666, 1.0, 0.6666666666666666, 1.0, 0.0, 1.0, 1.0, 0.6666666666666666, 0.0, 0.3333333333333333, 0.6666666666666666, 1.0, 1.0, 0.3333333333333333, 0.6666666666666666, 1.0, 0.6666666666666666, 1.0, 0.6666666666666666, 1.0, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 1.0, 0.6666666666666666, 1.0, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 1.0, 0.0, 0.6666666666666666, 1.0, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 1.0, 1.0, 0.6666666666666666, 1.0, 0.6666666666666666, 1.0, 1.0, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 1.0, 0.6666666666666666, 1.0, 1.0, 0.3333333333333333, 1.0, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 1.0, 1.0, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 1.0, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.0, 1.0, 1.0, 0.6666666666666666, 1.0, 0.6666666666666666, 1.0, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 1.0, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 1.0, 0.3333333333333333, 0.3333333333333333, 1.0, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 1.0, 0.6666666666666666, 1.0, 1.0, 1.0, 1.0, 0.3333333333333333, 0.3333333333333333, 1.0, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.0, 1.0, 0.3333333333333333, 1.0, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.0, 1.0, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 1.0, 0.3333333333333333, 1.0, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 1.0, 1.0, 1.0, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 1.0, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 1.0, 0.0, 0.6666666666666666, 1.0, 0.6666666666666666, 1.0, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 1.0, 1.0, 0.3333333333333333, 0.6666666666666666, 1.0, 1.0, 0.6666666666666666, 1.0, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 1.0, 0.6666666666666666, 0.3333333333333333, 1.0, 1.0, 1.0, 0.3333333333333333, 0.6666666666666666, 1.0, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 1.0, 1.0, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 1.0, 1.0, 0.3333333333333333, 1.0, 0.3333333333333333, 1.0, 0.3333333333333333, 0.6666666666666666, 1.0, 0.6666666666666666, 1.0, 0.3333333333333333, 1.0, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 1.0, 1.0, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 1.0, 0.6666666666666666, 0.3333333333333333, 1.0, 0.3333333333333333, 1.0, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 1.0, 1.0, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 1.0, 0.6666666666666666, 0.0, 0.6666666666666666, 1.0, 1.0, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 1.0, 0.3333333333333333, 0.0, 0.3333333333333333, 0.6666666666666666, 1.0, 1.0, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 1.0, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.0, 1.0, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 1.0, 0.3333333333333333, 1.0, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 1.0, 0.3333333333333333, 1.0, 1.0, 0.3333333333333333, 0.3333333333333333, 1.0, 0.3333333333333333, 1.0, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 1.0, 0.6666666666666666, 0.0, 0.3333333333333333, 1.0, 1.0, 0.6666666666666666, 1.0, 1.0, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 1.0, 0.6666666666666666, 0.6666666666666666, 1.0, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 1.0, 1.0, 0.6666666666666666, 1.0, 0.3333333333333333, 1.0, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 1.0, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 1.0, 0.3333333333333333, 0.6666666666666666, 1.0, 0.3333333333333333, 1.0, 1.0, 0.6666666666666666, 1.0, 0.6666666666666666, 1.0, 1.0, 1.0, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 1.0, 0.6666666666666666, 1.0, 0.6666666666666666, 1.0, 0.3333333333333333, 0.6666666666666666, 0.0, 0.3333333333333333, 1.0, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 1.0, 1.0, 1.0, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 1.0, 0.6666666666666666, 0.3333333333333333, 1.0, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 1.0, 0.6666666666666666, 1.0, 0.6666666666666666, 0.0, 1.0, 0.6666666666666666, 1.0, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 1.0, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.0, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.0, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 1.0, 0.3333333333333333, 0.3333333333333333, 1.0, 0.3333333333333333, 1.0, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 1.0, 1.0, 0.6666666666666666, 1.0, 1.0, 0.6666666666666666, 1.0, 0.3333333333333333, 1.0, 1.0, 1.0, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 1.0, 0.6666666666666666, 0.3333333333333333, 1.0, 0.3333333333333333, 0.3333333333333333, 1.0, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.0, 0.3333333333333333, 1.0, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 1.0, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.0, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 1.0, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 1.0, 0.3333333333333333, 0.6666666666666666, 1.0, 0.6666666666666666, 0.0, 0.0, 0.3333333333333333, 0.3333333333333333, 1.0, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 1.0, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 1.0, 0.3333333333333333, 0.3333333333333333, 1.0, 0.3333333333333333, 0.3333333333333333, 0.0, 1.0, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.0, 0.0, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.0, 1.0, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 1.0, 1.0, 1.0, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 1.0, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 1.0, 1.0, 0.3333333333333333, 1.0, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 1.0, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.0, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 1.0, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 1.0, 1.0, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 1.0, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 1.0, 1.0, 1.0, 0.3333333333333333, 0.6666666666666666, 0.0, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 1.0, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 1.0, 1.0, 0.6666666666666666, 1.0, 0.3333333333333333, 0.3333333333333333, 1.0, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 1.0, 0.6666666666666666, 1.0, 0.3333333333333333, 0.3333333333333333, 1.0, 1.0, 1.0, 1.0, 0.3333333333333333, 1.0, 0.3333333333333333, 0.6666666666666666, 0.0, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 1.0, 1.0, 1.0, 1.0, 0.3333333333333333, 0.6666666666666666, 1.0, 1.0, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 1.0, 0.3333333333333333, 1.0, 0.3333333333333333, 1.0, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.0, 0.6666666666666666, 0.0, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 1.0, 0.6666666666666666, 0.3333333333333333, 1.0, 1.0, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.0, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 1.0, 0.3333333333333333, 0.6666666666666666, 1.0, 1.0, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 1.0, 1.0, 1.0, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 1.0, 0.0, 1.0, 1.0, 0.3333333333333333, 0.6666666666666666, 1.0, 0.6666666666666666, 1.0, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.0, 0.6666666666666666, 0.6666666666666666, 0.0, 0.6666666666666666, 1.0, 0.6666666666666666, 0.6666666666666666, 1.0, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 1.0, 0.0, 0.3333333333333333, 0.3333333333333333, 0.0, 1.0, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 1.0, 0.3333333333333333, 1.0, 0.3333333333333333, 1.0, 1.0, 1.0, 0.3333333333333333, 1.0, 1.0, 0.6666666666666666, 0.0, 0.3333333333333333, 1.0, 1.0, 1.0, 1.0, 1.0, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 1.0, 1.0, 0.6666666666666666, 1.0, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 1.0, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 1.0, 1.0, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 1.0, 1.0, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 1.0, 0.3333333333333333, 0.0, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.0, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 1.0, 0.6666666666666666, 1.0, 0.0, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 1.0, 0.6666666666666666, 1.0, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.0, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.0, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.0, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 1.0, 0.0, 0.6666666666666666, 0.0, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 1.0, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 1.0, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.0, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 1.0, 0.3333333333333333, 0.0, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 1.0, 0.0, 0.3333333333333333, 1.0, 0.3333333333333333, 0.6666666666666666, 1.0, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 1.0, 0.6666666666666666, 0.0, 1.0, 1.0, 0.0, 0.6666666666666666, 0.0, 0.3333333333333333, 0.3333333333333333, 0.0, 0.0, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.0, 1.0, 0.0, 0.0, 0.3333333333333333, 0.6666666666666666, 0.0, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 1.0, 0.3333333333333333, 0.0, 0.3333333333333333, 1.0, 0.6666666666666666, 0.3333333333333333, 1.0, 0.0, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 1.0, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 1.0, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.0, 0.0, 0.0, 1.0, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 1.0, 1.0, 1.0, 1.0, 0.6666666666666666, 1.0, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 1.0, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 1.0, 0.3333333333333333, 0.3333333333333333, 1.0, 0.0, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 1.0, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 1.0, 1.0, 0.6666666666666666, 0.6666666666666666, 1.0, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 1.0, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 1.0, 0.3333333333333333, 0.3333333333333333, 1.0, 0.6666666666666666, 0.3333333333333333, 1.0, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 1.0, 0.6666666666666666, 0.6666666666666666, 1.0, 1.0, 0.3333333333333333, 0.3333333333333333, 1.0, 0.0, 1.0, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 1.0, 0.6666666666666666, 1.0, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 1.0, 1.0, 1.0, 0.6666666666666666, 0.0, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 1.0, 1.0, 0.3333333333333333, 0.6666666666666666, 0.0, 1.0, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 1.0, 0.3333333333333333, 0.3333333333333333, 1.0, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 1.0, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 1.0, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.0, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 1.0, 1.0, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 1.0, 0.6666666666666666, 1.0, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 1.0, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 1.0, 1.0, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.0, 0.6666666666666666, 1.0, 1.0, 0.6666666666666666, 1.0, 0.6666666666666666, 0.6666666666666666, 1.0, 1.0, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 1.0, 1.0, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 1.0, 1.0, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 1.0, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 1.0, 1.0, 0.3333333333333333, 1.0, 0.6666666666666666, 1.0, 1.0, 0.0, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 1.0, 1.0, 1.0, 0.6666666666666666], "xaxis": "x3", "yaxis": "y3"}, {"type": "histogram", "x": [0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 1.0, 0.3333333333333333, 1.0, 0.3333333333333333, 0.3333333333333333, 1.0, 0.6666666666666666, 1.0, 1.0, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.0, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 1.0, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.0, 0.6666666666666666, 0.6666666666666666, 0.0, 0.3333333333333333, 1.0, 0.0, 0.3333333333333333, 1.0, 1.0, 0.3333333333333333, 0.3333333333333333, 1.0, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 1.0, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 1.0, 1.0, 0.0, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 1.0, 1.0, 0.3333333333333333, 1.0, 1.0, 1.0, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 1.0, 0.6666666666666666, 0.6666666666666666, 1.0, 0.3333333333333333, 0.0, 1.0, 1.0, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.0, 0.6666666666666666, 0.6666666666666666, 1.0, 0.6666666666666666, 1.0, 1.0, 0.3333333333333333, 0.6666666666666666, 0.0, 1.0, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.0, 0.3333333333333333, 1.0, 0.6666666666666666, 0.0, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.0, 0.6666666666666666, 1.0, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 1.0, 1.0, 1.0, 1.0, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 1.0, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.0, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.0, 0.3333333333333333, 1.0, 0.6666666666666666, 0.0, 0.6666666666666666, 1.0, 0.0, 0.6666666666666666, 0.0, 0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 1.0, 0.3333333333333333, 0.3333333333333333], "xaxis": "x4", "yaxis": "y4"}],
+                        {"annotations": [{"font": {"size": 16}, "showarrow": false, "text": "Democrat", "x": 0.225, "xanchor": "center", "xref": "paper", "y": 1.0, "yanchor": "bottom", "yref": "paper"}, {"font": {"size": 16}, "showarrow": false, "text": "Republican", "x": 0.775, "xanchor": "center", "xref": "paper", "y": 1.0, "yanchor": "bottom", "yref": "paper"}, {"font": {"size": 16}, "showarrow": false, "text": "Independent", "x": 0.225, "xanchor": "center", "xref": "paper", "y": 0.375, "yanchor": "bottom", "yref": "paper"}, {"font": {"size": 16}, "showarrow": false, "text": "Other Party", "x": 0.775, "xanchor": "center", "xref": "paper", "y": 0.375, "yanchor": "bottom", "yref": "paper"}], "showlegend": false, "template": {"data": {"bar": [{"error_x": {"color": "#2a3f5f"}, "error_y": {"color": "#2a3f5f"}, "marker": {"line": {"color": "#E5ECF6", "width": 0.5}}, "type": "bar"}], "barpolar": [{"marker": {"line": {"color": "#E5ECF6", "width": 0.5}}, "type": "barpolar"}], "carpet": [{"aaxis": {"endlinecolor": "#2a3f5f", "gridcolor": "white", "linecolor": "white", "minorgridcolor": "white", "startlinecolor": "#2a3f5f"}, "baxis": {"endlinecolor": "#2a3f5f", "gridcolor": "white", "linecolor": "white", "minorgridcolor": "white", "startlinecolor": "#2a3f5f"}, "type": "carpet"}], "choropleth": [{"colorbar": {"outlinewidth": 0, "ticks": ""}, "type": "choropleth"}], "contour": [{"colorbar": {"outlinewidth": 0, "ticks": ""}, "colorscale": [[0.0, "#0d0887"], [0.1111111111111111, "#46039f"], [0.2222222222222222, "#7201a8"], [0.3333333333333333, "#9c179e"], [0.4444444444444444, "#bd3786"], [0.5555555555555556, "#d8576b"], [0.6666666666666666, "#ed7953"], [0.7777777777777778, "#fb9f3a"], [0.8888888888888888, "#fdca26"], [1.0, "#f0f921"]], "type": "contour"}], "contourcarpet": [{"colorbar": {"outlinewidth": 0, "ticks": ""}, "type": "contourcarpet"}], "heatmap": [{"colorbar": {"outlinewidth": 0, "ticks": ""}, "colorscale": [[0.0, "#0d0887"], [0.1111111111111111, "#46039f"], [0.2222222222222222, "#7201a8"], [0.3333333333333333, "#9c179e"], [0.4444444444444444, "#bd3786"], [0.5555555555555556, "#d8576b"], [0.6666666666666666, "#ed7953"], [0.7777777777777778, "#fb9f3a"], [0.8888888888888888, "#fdca26"], [1.0, "#f0f921"]], "type": "heatmap"}], "heatmapgl": [{"colorbar": {"outlinewidth": 0, "ticks": ""}, "colorscale": [[0.0, "#0d0887"], [0.1111111111111111, "#46039f"], [0.2222222222222222, "#7201a8"], [0.3333333333333333, "#9c179e"], [0.4444444444444444, "#bd3786"], [0.5555555555555556, "#d8576b"], [0.6666666666666666, "#ed7953"], [0.7777777777777778, "#fb9f3a"], [0.8888888888888888, "#fdca26"], [1.0, "#f0f921"]], "type": "heatmapgl"}], "histogram": [{"marker": {"colorbar": {"outlinewidth": 0, "ticks": ""}}, "type": "histogram"}], "histogram2d": [{"colorbar": {"outlinewidth": 0, "ticks": ""}, "colorscale": [[0.0, "#0d0887"], [0.1111111111111111, "#46039f"], [0.2222222222222222, "#7201a8"], [0.3333333333333333, "#9c179e"], [0.4444444444444444, "#bd3786"], [0.5555555555555556, "#d8576b"], [0.6666666666666666, "#ed7953"], [0.7777777777777778, "#fb9f3a"], [0.8888888888888888, "#fdca26"], [1.0, "#f0f921"]], "type": "histogram2d"}], "histogram2dcontour": [{"colorbar": {"outlinewidth": 0, "ticks": ""}, "colorscale": [[0.0, "#0d0887"], [0.1111111111111111, "#46039f"], [0.2222222222222222, "#7201a8"], [0.3333333333333333, "#9c179e"], [0.4444444444444444, "#bd3786"], [0.5555555555555556, "#d8576b"], [0.6666666666666666, "#ed7953"], [0.7777777777777778, "#fb9f3a"], [0.8888888888888888, "#fdca26"], [1.0, "#f0f921"]], "type": "histogram2dcontour"}], "mesh3d": [{"colorbar": {"outlinewidth": 0, "ticks": ""}, "type": "mesh3d"}], "parcoords": [{"line": {"colorbar": {"outlinewidth": 0, "ticks": ""}}, "type": "parcoords"}], "pie": [{"automargin": true, "type": "pie"}], "scatter": [{"marker": {"colorbar": {"outlinewidth": 0, "ticks": ""}}, "type": "scatter"}], "scatter3d": [{"line": {"colorbar": {"outlinewidth": 0, "ticks": ""}}, "marker": {"colorbar": {"outlinewidth": 0, "ticks": ""}}, "type": "scatter3d"}], "scattercarpet": [{"marker": {"colorbar": {"outlinewidth": 0, "ticks": ""}}, "type": "scattercarpet"}], "scattergeo": [{"marker": {"colorbar": {"outlinewidth": 0, "ticks": ""}}, "type": "scattergeo"}], "scattergl": [{"marker": {"colorbar": {"outlinewidth": 0, "ticks": ""}}, "type": "scattergl"}], "scattermapbox": [{"marker": {"colorbar": {"outlinewidth": 0, "ticks": ""}}, "type": "scattermapbox"}], "scatterpolar": [{"marker": {"colorbar": {"outlinewidth": 0, "ticks": ""}}, "type": "scatterpolar"}], "scatterpolargl": [{"marker": {"colorbar": {"outlinewidth": 0, "ticks": ""}}, "type": "scatterpolargl"}], "scatterternary": [{"marker": {"colorbar": {"outlinewidth": 0, "ticks": ""}}, "type": "scatterternary"}], "surface": [{"colorbar": {"outlinewidth": 0, "ticks": ""}, "colorscale": [[0.0, "#0d0887"], [0.1111111111111111, "#46039f"], [0.2222222222222222, "#7201a8"], [0.3333333333333333, "#9c179e"], [0.4444444444444444, "#bd3786"], [0.5555555555555556, "#d8576b"], [0.6666666666666666, "#ed7953"], [0.7777777777777778, "#fb9f3a"], [0.8888888888888888, "#fdca26"], [1.0, "#f0f921"]], "type": "surface"}], "table": [{"cells": {"fill": {"color": "#EBF0F8"}, "line": {"color": "white"}}, "header": {"fill": {"color": "#C8D4E3"}, "line": {"color": "white"}}, "type": "table"}]}, "layout": {"annotationdefaults": {"arrowcolor": "#2a3f5f", "arrowhead": 0, "arrowwidth": 1}, "coloraxis": {"colorbar": {"outlinewidth": 0, "ticks": ""}}, "colorscale": {"diverging": [[0, "#8e0152"], [0.1, "#c51b7d"], [0.2, "#de77ae"], [0.3, "#f1b6da"], [0.4, "#fde0ef"], [0.5, "#f7f7f7"], [0.6, "#e6f5d0"], [0.7, "#b8e186"], [0.8, "#7fbc41"], [0.9, "#4d9221"], [1, "#276419"]], "sequential": [[0.0, "#0d0887"], [0.1111111111111111, "#46039f"], [0.2222222222222222, "#7201a8"], [0.3333333333333333, "#9c179e"], [0.4444444444444444, "#bd3786"], [0.5555555555555556, "#d8576b"], [0.6666666666666666, "#ed7953"], [0.7777777777777778, "#fb9f3a"], [0.8888888888888888, "#fdca26"], [1.0, "#f0f921"]], "sequentialminus": [[0.0, "#0d0887"], [0.1111111111111111, "#46039f"], [0.2222222222222222, "#7201a8"], [0.3333333333333333, "#9c179e"], [0.4444444444444444, "#bd3786"], [0.5555555555555556, "#d8576b"], [0.6666666666666666, "#ed7953"], [0.7777777777777778, "#fb9f3a"], [0.8888888888888888, "#fdca26"], [1.0, "#f0f921"]]}, "colorway": ["#636efa", "#EF553B", "#00cc96", "#ab63fa", "#FFA15A", "#19d3f3", "#FF6692", "#B6E880", "#FF97FF", "#FECB52"], "font": {"color": "#2a3f5f"}, "geo": {"bgcolor": "white", "lakecolor": "white", "landcolor": "#E5ECF6", "showlakes": true, "showland": true, "subunitcolor": "white"}, "hoverlabel": {"align": "left"}, "hovermode": "closest", "mapbox": {"style": "light"}, "paper_bgcolor": "white", "plot_bgcolor": "#E5ECF6", "polar": {"angularaxis": {"gridcolor": "white", "linecolor": "white", "ticks": ""}, "bgcolor": "#E5ECF6", "radialaxis": {"gridcolor": "white", "linecolor": "white", "ticks": ""}}, "scene": {"xaxis": {"backgroundcolor": "#E5ECF6", "gridcolor": "white", "gridwidth": 2, "linecolor": "white", "showbackground": true, "ticks": "", "zerolinecolor": "white"}, "yaxis": {"backgroundcolor": "#E5ECF6", "gridcolor": "white", "gridwidth": 2, "linecolor": "white", "showbackground": true, "ticks": "", "zerolinecolor": "white"}, "zaxis": {"backgroundcolor": "#E5ECF6", "gridcolor": "white", "gridwidth": 2, "linecolor": "white", "showbackground": true, "ticks": "", "zerolinecolor": "white"}}, "shapedefaults": {"line": {"color": "#2a3f5f"}}, "ternary": {"aaxis": {"gridcolor": "white", "linecolor": "white", "ticks": ""}, "baxis": {"gridcolor": "white", "linecolor": "white", "ticks": ""}, "bgcolor": "#E5ECF6", "caxis": {"gridcolor": "white", "linecolor": "white", "ticks": ""}}, "title": {"x": 0.05}, "xaxis": {"automargin": true, "gridcolor": "white", "linecolor": "white", "ticks": "", "title": {"standoff": 15}, "zerolinecolor": "white", "zerolinewidth": 2}, "yaxis": {"automargin": true, "gridcolor": "white", "linecolor": "white", "ticks": "", "title": {"standoff": 15}, "zerolinecolor": "white", "zerolinewidth": 2}}}, "xaxis": {"anchor": "y", "domain": [0.0, 0.45], "matches": "x3", "showticklabels": false}, "xaxis2": {"anchor": "y2", "domain": [0.55, 1.0], "matches": "x4", "showticklabels": false}, "xaxis3": {"anchor": "y3", "domain": [0.0, 0.45]}, "xaxis4": {"anchor": "y4", "domain": [0.55, 1.0]}, "yaxis": {"anchor": "x", "domain": [0.625, 1.0]}, "yaxis2": {"anchor": "x2", "domain": [0.625, 1.0]}, "yaxis3": {"anchor": "x3", "domain": [0.0, 0.375]}, "yaxis4": {"anchor": "x4", "domain": [0.0, 0.375]}},
+                        {"responsive": true}
+                    ).then(function(){
+                            
+var gd = document.getElementById('9c79b214-ffc5-4126-ba32-069872a836b0');
+var x = new MutationObserver(function (mutations, observer) {{
+        var display = window.getComputedStyle(gd).display;
+        if (!display || display === 'none') {{
+            console.log([gd, 'removed!']);
+            Plotly.purge(gd);
+            observer.disconnect();
+        }}
+}});
+
+// Listen for the removal of the full notebook cells
+var notebookContainer = gd.closest('#notebook-container');
+if (notebookContainer) {{
+    x.observe(notebookContainer, {childList: true});
+}}
+
+// Listen for the clearing of the current output cell
+var outputEl = gd.closest('.output');
+if (outputEl) {{
+    x.observe(outputEl, {childList: true});
+}}
+
+                        })
+                };
+                });
+            </script>
+        </div>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p><strong> Are any of the means for the total score statisically significantly different from each other among the political parties?</strong></p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[39]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">democrat_totals</span> <span class="o">=</span> <span class="n">trivia_data</span><span class="p">[</span><span class="n">trivia_data</span><span class="p">[</span><span class="s2">&quot;pre_rptyid&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">contains</span><span class="p">(</span><span class="s2">&quot;Democrat&quot;</span><span class="p">)][</span><span class="s2">&quot;total_score&quot;</span><span class="p">]</span>
+<span class="n">republican_totals</span> <span class="o">=</span> <span class="n">trivia_data</span><span class="p">[</span><span class="n">trivia_data</span><span class="p">[</span><span class="s2">&quot;pre_rptyid&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">contains</span><span class="p">(</span><span class="s2">&quot;Republican&quot;</span><span class="p">)][</span><span class="s2">&quot;total_score&quot;</span><span class="p">]</span>
+<span class="n">independent_totals</span> <span class="o">=</span> <span class="n">trivia_data</span><span class="p">[</span><span class="n">trivia_data</span><span class="p">[</span><span class="s2">&quot;pre_rptyid&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">contains</span><span class="p">(</span><span class="s2">&quot;Independent&quot;</span><span class="p">)][</span><span class="s2">&quot;total_score&quot;</span><span class="p">]</span>
+<span class="n">other_totals</span> <span class="o">=</span> <span class="n">trivia_data</span><span class="p">[</span><span class="n">trivia_data</span><span class="p">[</span><span class="s2">&quot;pre_rptyid&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">contains</span><span class="p">(</span><span class="s2">&quot;Other&quot;</span><span class="p">)][</span><span class="s2">&quot;total_score&quot;</span><span class="p">]</span>
+
+<span class="n">f_stat</span><span class="p">,</span> <span class="n">p_value</span> <span class="o">=</span> <span class="n">stats</span><span class="o">.</span><span class="n">f_oneway</span><span class="p">(</span><span class="n">democrat_totals</span><span class="p">,</span> <span class="n">republican_totals</span><span class="p">,</span> <span class="n">independent_totals</span><span class="p">,</span> <span class="n">other_totals</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Oneway ANOVA Test:&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;F-Statistic: &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">f_stat</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;P-value: &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">p_value</span><span class="p">))</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area">
+
+<div class="prompt"></div>
+
+
+<div class="output_subarea output_stream output_stdout output_text">
+<pre>Oneway ANOVA Test:
+F-Statistic: 7.395526285411936
+P-value: 6.093380308417795e-05
+</pre>
+</div>
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>With a p-value of 6.09 * 10^-5 and an alpha-level of 0.05, we reject the null hypothesis that all of the group means for total score are the same. Now can we pinpoint which groups differ from each other?</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p><strong> Which political parties significantly differ from each other in mean total score? </strong></p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[41]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="c1">#https://pythonhealthcare.org/2018/04/13/55-statistics-multi-comparison-with-tukeys-test-and-the-holm-bonferroni-method/</span>
+<span class="n">paircomps</span> <span class="o">=</span> <span class="n">mult</span><span class="o">.</span><span class="n">MultiComparison</span><span class="p">(</span><span class="n">trivia_data</span><span class="p">[</span><span class="s2">&quot;total_score&quot;</span><span class="p">],</span> <span class="n">trivia_data</span><span class="p">[</span><span class="s2">&quot;pre_rptyid&quot;</span><span class="p">])</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">paircomps</span><span class="o">.</span><span class="n">tukeyhsd</span><span class="p">()</span><span class="o">.</span><span class="n">summary</span><span class="p">())</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area">
+
+<div class="prompt"></div>
+
+
+<div class="output_subarea output_stream output_stdout output_text">
+<pre>        Multiple Comparison of Means - Tukey HSD, FWER=0.05         
+====================================================================
+    group1         group2     meandiff p-adj   lower   upper  reject
+--------------------------------------------------------------------
+   1. Democrat  2. Republican   0.0653 0.1323 -0.0121  0.1427  False
+   1. Democrat 3. Independent   0.1248  0.001  0.0501  0.1994   True
+   1. Democrat 5. Other party  -0.0661 0.7453 -0.2429  0.1106  False
+ 2. Republican 3. Independent   0.0595 0.2048 -0.0186  0.1376  False
+ 2. Republican 5. Other party  -0.1314 0.2303 -0.3097  0.0468  False
+3. Independent 5. Other party  -0.1909 0.0287  -0.368 -0.0139   True
+--------------------------------------------------------------------
+</pre>
+</div>
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>It's difficult to make any hard conclusions on this pairwise analysis, since our test is giving us an equivalence paradox (Republican = Democrat $\not =$ Independent = Republican). Nonetheless, we can see that the major differences we should suspect are independent from all other groups, as well as democrat from republican.</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p><h3> <u>Conclusion<u/> <h3></p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p><p> So, what have we learned? After examining the demographics of the ANES 2012 Direct Democracy Study and concluding that they were balanced and representative, we attempted to investigate the knowledgeability of political parties relative to each other on basic governmental trivia. Of course, these three questions should not serve as an indicator of the participants intelligence, rather as a way of indicating awareness of basic federal affairs. I believe it is important to invesitgate this, since an informed and educated public is the key to a functioning democracy, as I hope upon which we all agree.<p></p>
+<p>While we can confidently conclude that the political parties differed in their ability to accurately answer these questions, it isn't fully clear which parties differ. It appears to be the case that the Independent-identifying participants were able to better answer the questions than other parties, although this difference was not significant in all comparisons.</p>
+<p>It would be intriguing for future study to examine party differences with more trivia questions, to see if there is a real difference of knowledge in public affairs between the parties.</p>
+
+</div>
+</div>
 </div>
     </div>
   </div>
